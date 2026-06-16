@@ -92,7 +92,9 @@ CONFIG_PACKAGE_kmod-br-netfilter=n
 
 CONFIG_PACKAGE_kmod-tun=y
 CONFIG_PACKAGE_kmod-wireguard=y
-CONFIG_PACKAGE_tailscale=y
+
+CONFIG_PACKAGE_tailscale=n
+CONFIG_PACKAGE_tailscaled=n
 
 # 声音、USB、存储
 
