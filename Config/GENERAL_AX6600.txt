@@ -1,5 +1,6 @@
 #科学插件调整
 #CONFIG_PACKAGE_luci-app-homeproxy=y
+
 #增加插件
 CONFIG_PACKAGE_luci-app-autoreboot=y
 CONFIG_PACKAGE_luci-app-netspeedtest=n
@@ -14,9 +15,6 @@ CONFIG_PACKAGE_luci-app-firewall=n
 CONFIG_PACKAGE_luci-app-firewall4=y
 CONFIG_PACKAGE_firewall4=y
 
-CONFIG_PACKAGE_kmod-nf-ipt=n
-CONFIG_PACKAGE_iptables=n
-
 #删除插件
 CONFIG_PACKAGE_luci-app-attendedsysupgrade=n
 CONFIG_PACKAGE_luci-app-wol=n
@@ -27,10 +25,14 @@ CONFIG_PACKAGE_luci-app-upnp=n
 CONFIG_CCACHE=y
 CONFIG_DEVEL=n
 CONFIG_KERNEL_CC_OPTIMIZE_FOR_PERFORMANCE=y
-#支持同一平台下的多个设备型号 我只生成一个固件
+
+#支持同一平台下的多个设备型号；当前只生成一个固件
 CONFIG_TARGET_MULTI_PROFILE=y
 CONFIG_TARGET_PER_DEVICE_ROOTFS=y
 CONFIG_TARGET_ROOTFS_INITRAMFS=n
+
+# AX6600 / IPQ60xx 内存与 NSS
+
 CONFIG_ATH11K_MEM_PROFILE_1G=y
 CONFIG_IPQ_MEM_PROFILE_1024=y
 CONFIG_PACKAGE_kmod-qca-nss-drv=y
@@ -40,6 +42,7 @@ CONFIG_PACKAGE_kmod-qca-nss-drv-qdisc=y
 CONFIG_PACKAGE_kmod-qca-nss-drv-map-t=y
 CONFIG_PACKAGE_kmod-qca-nss-drv-bridge-mgr=y
 CONFIG_PACKAGE_kmod-qca-nss-drv-vlan-mgr=y
+
 #内核调整
 CONFIG_PACKAGE_kmod-bonding=n
 CONFIG_PACKAGE_kmod-dsa=y
@@ -52,23 +55,48 @@ CONFIG_PACKAGE_kmod-mtd-rw=n
 CONFIG_PACKAGE_kmod-netlink-diag=n
 CONFIG_PACKAGE_kmod-nf-nat6=n
 CONFIG_PACKAGE_kmod-nf-nathelper=n
+
+# nftables / firewall4 / TProxy 基础
+
 CONFIG_PACKAGE_kmod-nft-arp=n
 CONFIG_PACKAGE_kmod-nft-bridge=y
-CONFIG_PACKAGE_kmod-nft-compat=n
 CONFIG_PACKAGE_kmod-nft-connlimit=n
 CONFIG_PACKAGE_kmod-nft-core=y
 CONFIG_PACKAGE_kmod-nft-dup-inet=n
 CONFIG_PACKAGE_kmod-nft-fib=y
 CONFIG_PACKAGE_kmod-nft-fullcone=n
-CONFIG_PACKAGE_kmod-nft-nat=n
 CONFIG_PACKAGE_kmod-nft-netdev=n
-CONFIG_PACKAGE_kmod-nft-offload=n
 CONFIG_PACKAGE_kmod-nft-queue=n
 CONFIG_PACKAGE_kmod-nft-socket=y
 CONFIG_PACKAGE_kmod-nft-tproxy=y
 CONFIG_PACKAGE_kmod-nft-xfrm=y
-CONFIG_PACKAGE_kmod-sound-core=n
+
+# Docker 需要的 nft/iptables 兼容依赖
+
+# 注意：这些是为了 dockerd / 网心云 host 模式可用，不代表运行时允许 Docker 自动接管主路由网络。
+
+CONFIG_PACKAGE_kmod-nf-ipt=y
+CONFIG_PACKAGE_iptables=y
+CONFIG_PACKAGE_iptables-nft=y
+CONFIG_PACKAGE_ip6tables-nft=y
+CONFIG_PACKAGE_kmod-nft-compat=y
+CONFIG_PACKAGE_kmod-nft-nat=y
+
+# 不启用高风险 offload / 复杂容器网络模块
+
+CONFIG_PACKAGE_kmod-nft-offload=n
+CONFIG_PACKAGE_kmod-macvlan=n
+CONFIG_PACKAGE_kmod-br-netfilter=n
+
+# Tailscale / WireGuard / TUN
+
 CONFIG_PACKAGE_kmod-tun=y
+CONFIG_PACKAGE_kmod-wireguard=y
+CONFIG_PACKAGE_tailscale=y
+
+# 声音、USB、存储
+
+CONFIG_PACKAGE_kmod-sound-core=n
 CONFIG_PACKAGE_kmod-usb3=y
 CONFIG_PACKAGE_kmod-usb-audio=n
 CONFIG_PACKAGE_kmod-usb-serial-qualcomm=n
@@ -83,12 +111,19 @@ CONFIG_PACKAGE_kmod-usb-net-cdc-mbim=n
 CONFIG_PACKAGE_kmod-usb-net-cdc-ncm=n
 CONFIG_PACKAGE_kmod-usb-net-cdc-subset=n
 CONFIG_PACKAGE_kmod-usb-net-huawei-cdc-ncm=n
+
 # iPhone USB 共享
+
 CONFIG_PACKAGE_kmod-usb-net-ipheth=n
+
+# 4G/5G USB 网卡
+
 CONFIG_PACKAGE_kmod-usb-net-qmi-wwan=y
 CONFIG_PACKAGE_kmod-usb-net-qmi-wwan-fibocom=y
 CONFIG_PACKAGE_kmod-usb-net-qmi-wwan-quectel=y
+
 # 安卓 RNDIS 共享
+
 CONFIG_PACKAGE_kmod-usb-net-rndis=n
 CONFIG_PACKAGE_kmod-usb-net-rtl8150=n
 CONFIG_PACKAGE_kmod-usb-net-rtl8152=y
@@ -99,27 +134,56 @@ CONFIG_PACKAGE_kmod-usb-storage-extras=y
 CONFIG_PACKAGE_kmod-usb-storage-uas=y
 CONFIG_PACKAGE_kmod-usb-uhci=n
 CONFIG_PACKAGE_kmod-usb-xhci=y
-#不用 Docker / Podman → 可关
-CONFIG_PACKAGE_kmod-veth=n
-CONFIG_PACKAGE_kmod-wireguard=y
+
+# eMMC / 分区 / 文件系统
+
 CONFIG_PACKAGE_kmod-mmc=y
 CONFIG_PACKAGE_kmod-sdhci=y
 CONFIG_PACKAGE_kmod-sdhci-msm=y
 CONFIG_PACKAGE_kmod-fs-ntfs3=y
+CONFIG_PACKAGE_kmod-fs-overlayfs=y
+
+# Docker for wxedge / host-network containers
+
+# 目标：支持网心云/容器魔方这类 --privileged --net=host 容器。
+
+# 运行策略：dockerd 默认不启动；只在 Docker 模式下启动。
+
+CONFIG_PACKAGE_docker=y
+CONFIG_PACKAGE_dockerd=y
+CONFIG_PACKAGE_containerd=y
+CONFIG_PACKAGE_runc=y
+CONFIG_PACKAGE_tini=y
+CONFIG_PACKAGE_kmod-veth=y
+
+# 不启用 Docker 图形管理和 Compose，降低变量
+
+CONFIG_PACKAGE_luci-app-dockerman=y
+CONFIG_PACKAGE_luci-app-docker=n
+CONFIG_PACKAGE_docker-compose=n
+
 #组件调整
 CONFIG_PACKAGE_autocore=y
 CONFIG_PACKAGE_perl=n
 CONFIG_PACKAGE_libopenssl=y
 CONFIG_PACKAGE_libopenssl-conf=y
 CONFIG_PACKAGE_iptasn=y
-# U 盘自动挂载
+
+# HTTPS / 证书 / 下载工具
+
+CONFIG_PACKAGE_ca-bundle=y
+CONFIG_PACKAGE_ca-certificates=y
+CONFIG_PACKAGE_wget-ssl=y
+CONFIG_PACKAGE_curl=y
+
+# U 盘自动挂载与磁盘工具
+
 CONFIG_PACKAGE_automount=y
 CONFIG_PACKAGE_blkid=y
 CONFIG_PACKAGE_cfdisk=y
 CONFIG_PACKAGE_cgdisk=y
 CONFIG_PACKAGE_coremark=n
 CONFIG_PACKAGE_cpufreq=y
-CONFIG_PACKAGE_curl=y
 CONFIG_PACKAGE_dmesg=y
 CONFIG_PACKAGE_fdisk=y
 CONFIG_PACKAGE_e2fsprogs=y
@@ -148,20 +212,25 @@ CONFIG_PACKAGE_usbmuxd=n
 CONFIG_PACKAGE_usbutils=y
 
 # 雅典娜 LED 点阵屏驱动及插件
+
 CONFIG_PACKAGE_luci-app-athena-led=y
 CONFIG_PACKAGE_athena-led-control=y
 
-# 建议开启自动挂载，方便识别 eMMC 分区
+# 自动挂载，方便识别 eMMC / U 盘分区
+
 CONFIG_PACKAGE_block-mount=y
 CONFIG_PACKAGE_luci-app-mountd=y
 
-# 补充分区扩容的必备工具
+# 分区扩容必备工具
+
 CONFIG_PACKAGE_resize2fs=y
 CONFIG_PACKAGE_tune2fs=y
 
 # 无线调节增强
+
 CONFIG_PACKAGE_iwinfo=y
 CONFIG_PACKAGE_luci-app-wireless-regdb=y
-#老优化，副作用大
-CONFIG_PACKAGE_skb_recycler=n
 
+# 老优化，副作用大
+
+CONFIG_PACKAGE_skb_recycler=n
